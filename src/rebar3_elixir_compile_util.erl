@@ -54,19 +54,19 @@ add_elixir(State) ->
 
 get_details(State) ->
     Config = rebar_state:get(State, elixir_opts),
-    BinDir = case lists:keyfind(bin_dir, 1, Config) of
+    BinDir = [$"] ++ case lists:keyfind(bin_dir, 1, Config) of
                 false -> 
                     {ok, ElixirBin_} = find_executable("elixir"),
                     filename:dirname(ElixirBin_);
                 {bin_dir, Dir1} -> Dir1
-             end, 
+             end ++ [$"], 
 
-    LibDir = case lists:keyfind(lib_dir, 1, Config) of
+    LibDir = [$"] ++ case lists:keyfind(lib_dir, 1, Config) of
                 false -> 
                     {ok, ElixirLibs_} = rebar_utils:sh("elixir -e \"IO.puts :code.lib_dir(:elixir)\"", []),
                     filename:join(re:replace(ElixirLibs_, "\\s+", "", [global,{return,list}]), "../");
                 {lib_dir, Dir2} -> Dir2
-             end,            
+             end ++ [$"],            
     {env, Env} = lists:keyfind(env, 1, Config),
     {BinDir, Env, Config, LibDir}.
 
