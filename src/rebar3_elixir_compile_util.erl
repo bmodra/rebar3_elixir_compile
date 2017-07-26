@@ -212,7 +212,7 @@ escape_path(Path) ->
            X == $\- -> X;
            X == $_ -> X;
            X == $/ -> X;
-           true -> [$\\, X ]
+           true -> [$\\, $\\, X ]
        end || X <- Path ]).
 
 add_states(State, BinDir, Env, Config) ->
