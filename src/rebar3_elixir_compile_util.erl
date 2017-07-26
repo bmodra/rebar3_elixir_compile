@@ -1,6 +1,6 @@
 -module(rebar3_elixir_compile_util).
 
--export([add_elixir/1, get_details/1, add_states/4, add_deps_to_path/3, compile_libs/1, compile_libs/2, clean_app/2, transfer_libs/3, to_binary/1, to_string/1, convert_lock/3, add_mix_locks/1, add_deps_to_path/1, is_app_in_dir/2, maybe_copy_dir/3,fetch_mix_app_from_dep/2, libs_dir/2]).
+-export([add_elixir/1, get_details/1, add_states/4, add_deps_to_path/3, compile_libs/1, compile_libs/2, clean_app/2, transfer_libs/3, to_binary/1, to_string/1, convert_lock/3, add_mix_locks/1, add_deps_to_path/1, is_app_in_dir/2, maybe_copy_dir/3,fetch_mix_app_from_dep/2, libs_dir/2, escape_path/1]).
 
 -spec to_binary(binary()|list()|integer()|atom()) -> binary().
 to_binary(V) when is_binary(V) -> V;
@@ -201,21 +201,29 @@ find_executable(Name) ->
         Path -> {ok, filename:nativename(Path)}
     end.
 
+escape_path_([], Result) ->
+    lists:flatten(lists:join($/, lists:reverse(Result)));
+escape_path_([Path | Rest], Result) ->
+    NewResult =
+        case lists:any(fun(X) -> (X == $ ) or (X == $() or (X == $)) end, Path) of
+            true ->
+                [lists:flatten([$", Path, $"]) | Result];
+            false ->
+                [Path | Result]
+        end,
+    escape_path_(Rest, NewResult).
+
 escape_path(Path) ->
-    lists:flatten(
-      [$\\, $",
-       [if
-            (X >= $a) and (X =< $z) -> X;
-            (X >= $A) and (X =< $Z) -> X;
-            (X >= $0) and (X =< $9) -> X;
-            X == $: -> X;
-            X == $. -> X;
-            X == $\- -> X;
-            X == $_ -> X;
-            X == $/ -> X;
-            true -> [$\\, X ]
-        end || X <- Path ],
-       $\\, $" ]).
+    Escaped1 = escape_path_(string:tokens(Path, "/"), []),
+    Escaped2 =
+        case Path of
+            [$/|_] -> "/" ++ Escaped1;
+            _ -> Escaped1
+        end,
+    case lists:reverse(Path) of
+        [$/|_] -> Escaped2 ++ "/";
+        _ -> Escaped2
+    end.
 
 add_states(State, BinDir, Env, Config) ->
     EnvState = rebar_state:set(State, mix_env, Env),

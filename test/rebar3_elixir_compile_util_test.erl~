@@ -1,0 +1,15 @@
+-module(rebar3_elixir_compile_util_test).
+
+-include_lib("eunit/include/eunit.hrl").
+
+escape_path_test_() ->
+    [
+     { "escape_path() witha  normal path should pass it unchanged",
+       [fun() ->
+                NormalPath = "/a/b/c/d",
+                EscapedPath = rebar3_elixir_compile_util:escape_path(NormalPath),
+                ?assert(EscapedPath == NormalPath)
+        end
+       ]
+     }
+    ].
