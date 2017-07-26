@@ -52,38 +52,21 @@ add_elixir(State) ->
     code:add_patha(filename:join(LibDir, "logger/ebin")),
     MixState.
 
-escape_path(Path) ->
-    lists:flatten(
-      [if
-           (X >= $a) and (X =< $z) -> X;
-           (X >= $A) and (X =< $Z) -> X;
-           (X >= $0) and (X =< $9) -> X;
-           X == $. -> X;
-           X == $\- -> X;
-           X == $_ -> X;
-           X == $/ -> X;
-           true -> [$\\, X ]
-       end || X <- Path ]).
-
 get_details(State) ->
     Config = rebar_state:get(State, elixir_opts),
-    BinDir =
-        escape_path(
-          case lists:keyfind(bin_dir, 1, Config) of
-              false -> 
-                  {ok, ElixirBin_} = find_executable("elixir"),
-                  filename:dirname(ElixirBin_);
-              {bin_dir, Dir1} -> Dir1
-          end), 
+    BinDir = case lists:keyfind(bin_dir, 1, Config) of
+                 false -> 
+                     {ok, ElixirBin_} = find_executable("elixir"),
+                     filename:dirname(ElixirBin_);
+                 {bin_dir, Dir1} -> Dir1
+             end,
     
-    LibDir = 
-        escape_path(
-          case lists:keyfind(lib_dir, 1, Config) of
-              false -> 
-                  {ok, ElixirLibs_} = rebar_utils:sh("elixir -e \"IO.puts :code.lib_dir(:elixir)\"", []),
-                  filename:join(re:replace(ElixirLibs_, "\\s+", "", [global,{return,list}]), "../");
-              {lib_dir, Dir2} -> Dir2
-          end),
+    LibDir = case lists:keyfind(lib_dir, 1, Config) of
+                 false -> 
+                     {ok, ElixirLibs_} = rebar_utils:sh("elixir -e \"IO.puts :code.lib_dir(:elixir)\"", []),
+                     filename:join(re:replace(ElixirLibs_, "\\s+", "", [global,{return,list}]), "../");
+                 {lib_dir, Dir2} -> Dir2
+             end,
     {env, Env} = lists:keyfind(env, 1, Config),
     {BinDir, Env, Config, LibDir}.
 
@@ -218,12 +201,25 @@ find_executable(Name) ->
         Path -> {ok, filename:nativename(Path)}
     end.
 
+escape_path(Path) ->
+    lists:flatten(
+      [if
+           (X >= $a) and (X =< $z) -> X;
+           (X >= $A) and (X =< $Z) -> X;
+           (X >= $0) and (X =< $9) -> X;
+           X == $. -> X;
+           X == $\- -> X;
+           X == $_ -> X;
+           X == $/ -> X;
+           true -> [$\\, X ]
+       end || X <- Path ]).
+
 add_states(State, BinDir, Env, Config) ->
     EnvState = rebar_state:set(State, mix_env, Env),
     RebarState = rebar_state:set(EnvState, elixir_opts, Config),
-    BaseDirState = rebar_state:set(RebarState, elixir_base_dir, filename:join(rebar_dir:root_dir(RebarState), "elixir_libs/")),
-    ElixirState = rebar_state:set(BaseDirState, elixir, filename:join(BinDir, "elixir ")),
-    rebar_state:set(ElixirState, mix, filename:join(BinDir, "mix ")).    
+    BaseDirState = rebar_state:set(RebarState, elixir_base_dir, escape_path(filename:join(rebar_dir:root_dir(RebarState), "elixir_libs/"))),
+    ElixirState = rebar_state:set(BaseDirState, elixir, escape_path(filename:join(BinDir, "elixir")) ++ " "),
+    rebar_state:set(ElixirState, mix, escape_path(filename:join(BinDir, "mix")) ++ " ").
 
 compile_libs(State) ->
     compile_libs(State, false).
