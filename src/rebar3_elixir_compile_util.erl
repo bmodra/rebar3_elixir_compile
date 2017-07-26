@@ -207,6 +207,7 @@ escape_path(Path) ->
            (X >= $a) and (X =< $z) -> X;
            (X >= $A) and (X =< $Z) -> X;
            (X >= $0) and (X =< $9) -> X;
+           X == $: -> X;
            X == $. -> X;
            X == $\- -> X;
            X == $_ -> X;
