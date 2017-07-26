@@ -201,12 +201,26 @@ find_executable(Name) ->
         Path -> {ok, filename:nativename(Path)}
     end.
 
+escape_path(Path) ->
+    lists:flatten(
+      [if
+           (X >= $a) and (X =< $z) -> X;
+           (X >= $A) and (X =< $Z) -> X;
+           (X >= $0) and (X =< $9) -> X;
+           X == $: -> X;
+           X == $. -> X;
+           X == $\- -> X;
+           X == $_ -> X;
+           X == $/ -> X;
+           true -> [$\\, $\\, X ]
+       end || X <- Path ]).
+
 add_states(State, BinDir, Env, Config) ->
     EnvState = rebar_state:set(State, mix_env, Env),
     RebarState = rebar_state:set(EnvState, elixir_opts, Config),
     BaseDirState = rebar_state:set(RebarState, elixir_base_dir, filename:join(rebar_dir:root_dir(RebarState), "elixir_libs/")),
-    ElixirState = rebar_state:set(BaseDirState, elixir, filename:join(BinDir, "elixir ")),
-    rebar_state:set(ElixirState, mix, filename:join(BinDir, "mix ")).
+    ElixirState = rebar_state:set(BaseDirState, elixir, escape_path(filename:join(BinDir, "elixir")) ++ [$ ]),
+    rebar_state:set(ElixirState, mix, escape_path(filename:join(BinDir, "mix")) ++ [$ ]).
 
 compile_libs(State) ->
     compile_libs(State, false).
