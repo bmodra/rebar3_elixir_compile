@@ -203,17 +203,21 @@ find_executable(Name) ->
 
 escape_path(Path) ->
     lists:flatten(
-      [if
-           (X >= $a) and (X =< $z) -> X;
-           (X >= $A) and (X =< $Z) -> X;
-           (X >= $0) and (X =< $9) -> X;
-           X == $: -> X;
-           X == $. -> X;
-           X == $\- -> X;
-           X == $_ -> X;
-           X == $/ -> X;
-           true -> [$\\, X ]
-       end || X <- Path ]).
+      [ $", 
+        [if
+             (X >= $a) and (X =< $z) -> X;
+             (X >= $A) and (X =< $Z) -> X;
+             (X >= $0) and (X =< $9) -> X;
+             X == $: -> X;
+             X == $. -> X;
+             X == $\- -> X;
+             X == $_ -> X;
+             X == $/ -> X;
+             true -> [$\\, X ]
+         end || X <- Path ],
+        $"
+      ]
+     ).
 
 add_states(State, BinDir, Env, Config) ->
     EnvState = rebar_state:set(State, mix_env, Env),
